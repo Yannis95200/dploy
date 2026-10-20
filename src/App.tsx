@@ -1,18 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
   AudioLines,
   Check,
+  Download,
   CircleUserRound,
+  Mail,
   Menu,
-  Printer,
   Pause,
   Play,
-  Share2,
   Sparkles,
   X,
 } from 'lucide-react';
+
+import { eraThemes, generatePhrase } from '@/eraThemes';
 
 type Product = { name: string; image: string; accent: string };
 type Era = { name: string; year: string; image: string; className?: string };
@@ -49,6 +51,8 @@ const eras: Era[] = [
   { name: 'Futur', year: '2500', image: 'https://images.pexels.com/photos/17195067/pexels-photo-17195067.jpeg?auto=compress&cs=tinysrgb&h=650&w=940' },
 ];
 
+const waveHeights = Array.from({ length: 56 }, (_, i) => 25 + Math.round(Math.abs(Math.sin(i * 1.7) * Math.cos(i * 0.6)) * 75));
+
 const steps = ['Produit', 'Époque', 'Intention', 'Génération'];
 
 function App() {
@@ -57,9 +61,74 @@ function App() {
   const [product, setProduct] = useState(products[0]);
   const [era, setEra] = useState(eras[0]);
   const [intention, setIntention] = useState('Oyé Oyé, bienvenue dans votre magasin, rendez vous au rayon frais pour profiter de notre promo flash sur les bananes.');
+  const [intentionEdited, setIntentionEdited] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [customOpen, setCustomOpen] = useState(false);
   const [customText, setCustomText] = useState('');
+  const [audioUrl, setAudioUrl] = useState('');
+  const [audioStatus, setAudioStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [mailOpen, setMailOpen] = useState(false);
+  const [mailTo, setMailTo] = useState('');
+  const [mailStatus, setMailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [mailError, setMailError] = useState('');
+
+  useEffect(() => {
+    if (screen !== 'result') return;
+    const controller = new AbortController();
+    setAudioStatus('loading');
+    setIsPlaying(false);
+    setCurrentTime(0);
+    fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: intention, era: era.year }),
+      signal: controller.signal,
+    })
+      .then((response) => { if (!response.ok) throw new Error(response.statusText); return response.blob(); })
+      .then((blob) => { setAudioUrl(URL.createObjectURL(blob)); setAudioStatus('ready'); })
+      .catch((error) => { if (error.name !== 'AbortError') setAudioStatus('error'); });
+    return () => controller.abort();
+  }, [screen, era.year, intention]);
+
+  useEffect(() => () => { if (audioUrl) URL.revokeObjectURL(audioUrl); }, [audioUrl]);
+
+  const togglePlay = () => {
+    const audio = audioRef.current;
+    if (!audio || audioStatus !== 'ready') return;
+    if (audio.paused) void audio.play(); else audio.pause();
+  };
+
+  const sendMail = async () => {
+    if (!audioUrl) return;
+    setMailStatus('sending');
+    setMailError('');
+    try {
+      const blob = await (await fetch(audioUrl)).blob();
+      const audio = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(',')[1]);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+      });
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: mailTo.trim(), audio, text: intention, product: product.name, era: era.year }),
+      });
+      if (!response.ok) throw new Error(await response.text());
+      setMailStatus('sent');
+    } catch (error) {
+      setMailError(error instanceof Error ? error.message : 'Erreur inconnue');
+      setMailStatus('error');
+    }
+  };
+
+  const closeMail = () => { setMailOpen(false); setMailStatus('idle'); setMailError(''); };
+
+  const formatTime = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 
   const selectCustom = () => {
     const trimmed = customText.trim();
@@ -71,7 +140,10 @@ function App() {
   };
 
   const begin = () => { setScreen('wizard'); setStep(1); };
-  const next = () => step < 3 ? setStep(step + 1) : setScreen('result');
+  const next = () => {
+    if (step === 2 && !intentionEdited) setIntention(generatePhrase(product.name, era.year));
+    if (step < 3) setStep(step + 1); else setScreen('result');
+  };
   const back = () => step > 1 ? setStep(step - 1) : setScreen('home');
 
   if (screen === 'home') {
@@ -111,18 +183,33 @@ function App() {
         <div className="result-content">
           <div className="result-heading"><p className="back-link" onClick={() => setScreen('wizard')}><ArrowLeft size={14} /> Retour</p><h1>Et voilà votre spot<br />pour <em>{era.year}</em>,<br /><span className="diffusion-text">{eraDiffusion[era.year] ?? ''}</span></h1></div>
           <div className="result-grid">
-            <div className="poster" style={{ '--poster-accent': product.accent } as React.CSSProperties}>
+            <div className="poster" style={{ '--poster-accent': product.accent, ...eraThemes[era.year].vars } as React.CSSProperties}>
               <div className="poster-noise" />
-              <p className="poster-brand">BANANES</p><div className="poster-sun" /><div className="poster-fruit">🍌</div>
-              <div className="poster-copy"><span>le fruit</span><strong>du bonheur !</strong></div><div className="poster-ribbon">Promo flash<br />au rayon frais !</div><b className="poster-price">50¢</b>
+              <p className="poster-intro">{eraThemes[era.year].intro}</p>
+              <p className="poster-brand">{product.name.toUpperCase()}</p><div className="poster-sun" />{product.image ? <img className="poster-photo" src={product.image} alt="" /> : <div className="poster-photo poster-photo-empty"><Sparkles size={64} /></div>}
+              <div className="poster-copy"><span>{eraThemes[era.year].tagline}</span></div><div className="poster-ribbon">{eraThemes[era.year].ribbon}</div><b className="poster-price">{eraThemes[era.year].price}</b>
             </div>
             <div className="result-details">
               <div className="ad-script"><p className="ad-script-label">Le texte de votre pub</p><p className="ad-script-text">{intention}</p></div>
-              <div className="audio-player"><div className="player-wave"><AudioLines size={38} /><AudioLines size={38} /></div><div className="player-controls"><span>0:00</span><button className="play-button" onClick={() => setIsPlaying(!isPlaying)}>{isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}</button><span>0:20</span></div></div>
-              <div className="result-actions"><button className="secondary-button"><Printer size={15} /> Imprimer</button><button className="secondary-button"><Share2 size={15} /> Partager</button></div>
+              <div className="audio-player">{audioUrl && <audio ref={audioRef} src={audioUrl} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onEnded={() => setIsPlaying(false)} onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)} onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)} />}<div className="player-wave" onClick={(event) => { const audio = audioRef.current; if (!audio || !duration) return; const box = event.currentTarget.getBoundingClientRect(); audio.currentTime = ((event.clientX - box.left) / box.width) * duration; }}>{waveHeights.map((height, index) => <i key={index} className={duration && index / waveHeights.length < currentTime / duration ? 'played' : ''} style={{ height: `${height}%` }} />)}</div><div className="player-controls"><span>{formatTime(currentTime)}</span><button className="play-button" onClick={togglePlay} disabled={audioStatus !== 'ready'}>{isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}</button><span>{audioStatus === 'loading' ? '…' : formatTime(duration)}</span></div>{audioStatus === 'loading' && <p className="audio-status">Génération de la voix…</p>}{audioStatus === 'error' && <p className="audio-status">La voix n'a pas pu être générée.</p>}</div>
+              <div className="result-actions"><button className="secondary-button" onClick={() => setMailOpen(true)} disabled={audioStatus !== 'ready'}><Mail size={15} /> Envoyer par mail</button><a className="secondary-button" href={audioUrl || undefined} download="spot-dploy.mp3" aria-disabled={audioStatus !== 'ready'} style={audioStatus !== 'ready' ? { opacity: 0.5, pointerEvents: 'none' } : undefined}><Download size={15} /> Télécharger</a></div>
             </div>
           </div>
         </div>
+      {mailOpen && (
+        <div className="modal-overlay" onClick={closeMail}>
+          <div className="modal mail-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={closeMail}><X size={18} /></button>
+            <h2>Recevez votre spot</h2>
+            {mailStatus === 'sent' ? <p>C’est parti ! Le spot a été envoyé à {mailTo}.</p> : <>
+              <p>Entrez votre adresse e-mail, nous vous envoyons le fichier audio.</p>
+              <input className="modal-input mail-input" type="email" placeholder="vous@exemple.fr" value={mailTo} onChange={(e) => setMailTo(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && /^\S+@\S+\.\S+$/.test(mailTo)) void sendMail(); }} />
+              {mailStatus === 'error' && <p className="mail-error">{mailError || 'L’envoi a échoué.'}</p>}
+              <button className="primary-button" onClick={sendMail} disabled={!/^\S+@\S+\.\S+$/.test(mailTo) || mailStatus === 'sending'}>{mailStatus === 'sending' ? 'Envoi…' : <>Envoyer <ArrowRight size={16} /></>}</button>
+            </>}
+          </div>
+        </div>
+      )}
       </main>
     );
   }
@@ -136,7 +223,7 @@ function App() {
           <Progress current={step} />
           {step === 1 && <ProductStep selected={product.name} onSelect={(item) => setProduct(item)} onOpenCustom={() => setCustomOpen(true)} />}
           {step === 2 && <EraStep selected={era.name} onSelect={(item) => setEra(item)} />}
-          {step === 3 && <IntentStep value={intention} onChange={setIntention} />}
+          {step === 3 && <IntentStep value={intention} onChange={(value, manual = true) => { setIntention(value); setIntentionEdited(manual); }} product={product.name} eraYear={era.year} />}
           <div className="wizard-footer"><span>{step === 3 ? 'Prêt pour le voyage ?' : 'Étape suivante'}</span><button className="primary-button" onClick={next}>{step === 3 ? <><AudioLines size={16} /> Générer</> : <>Suivant <ArrowRight size={16} /></>}</button></div>
         </section>
       </div>
@@ -160,7 +247,7 @@ function TopBar({ onBack }: { onBack?: () => void }) { return <header className=
 function Progress({ current }: { current: number }) { return <div className="progress">{steps.map((label, index) => <div className={`progress-step ${index + 1 <= current ? 'done' : ''}`} key={label}><span>{index + 1 < current ? <Check size={11} /> : index + 1}</span><b>{label}</b></div>)}</div>; }
 function ProductStep({ selected, onSelect, onOpenCustom }: { selected: string; onSelect: (item: Product) => void; onOpenCustom: () => void }) { return <div className="step-content"><p className="section-label">01 / Sélection</p><h1>Que voulez-vous<br />promouvoir ?</h1><p className="step-intro">Choisissez un produit pour lequel créer votre spot.</p><div className="product-grid">{products.map((item) => <button className={`product-card ${selected === item.name ? 'selected' : ''}`} key={item.name} onClick={() => onSelect(item)}><div className="product-image">{item.image ? <img src={item.image} alt="" /> : <Sparkles size={26} className="product-placeholder" />}</div><span>{item.name}</span>{selected === item.name && <i><Check size={11} /></i>}</button>)}<button className="product-card custom-card" onClick={onOpenCustom}><span className="custom-ou">OU</span><span className="custom-hint">Tapez votre<br />propre produit</span></button></div></div>; }
 function EraStep({ selected, onSelect }: { selected: string; onSelect: (item: Era) => void }) { return <div className="step-content"><p className="section-label">02 / Atmosphère</p><h1>Choisissez maintenant<br />une époque</h1><p className="step-intro">Chaque époque a son propre ton, son style, ses émotions.</p><div className="era-grid">{eras.map((item) => <button className={`era-card ${selected === item.name ? 'selected' : ''}`} key={item.name} onClick={() => onSelect(item)}><img src={item.image} alt="" /><span>· {item.name}</span><i>{selected === item.name ? <Check size={11} /> : ''}</i></button>)}</div></div>; }
-function IntentStep({ value, onChange }: { value: string; onChange: (value: string) => void }) { return <div className="step-content intent-content"><p className="section-label">03 / Direction</p><h1>Voici votre intention</h1><p className="step-intro">Décrivez le message que votre publicité doit faire passer.</p><div className="intent-layout"><div><div className="textarea-wrap"><Sparkles size={16} /><textarea value={value} maxLength={300} onChange={(event) => onChange(event.target.value)} /><span>{value.length}/300</span></div><label className="refine-label">Affinez <small>(optionnel)</small></label><div className="chips"><button>Ton joyeux <X size={12} /></button><button>Urgent <X size={12} /></button><button>Offre limitée <X size={12} /></button></div></div><div className="preparing"><div className="preparing-ring"><AudioLines size={62} /></div><span>Préparation<br />du voyage temporel...</span></div></div></div>; }
+function IntentStep({ value, onChange, product, eraYear }: { value: string; onChange: (value: string, manual?: boolean) => void; product: string; eraYear: string }) { return <div className="step-content intent-content"><p className="section-label">03 / Direction</p><h1>Voici votre intention</h1><p className="step-intro">Décrivez le message que votre publicité doit faire passer.</p><div className="intent-layout"><div><div className="textarea-wrap"><button className="ai-icon" type="button" title="Générer une phrase avec l’IA" onClick={() => onChange(generatePhrase(product, eraYear, value), false)}><Sparkles size={16} /></button><textarea value={value} maxLength={300} onChange={(event) => onChange(event.target.value)} /><span>{value.length}/300</span></div></div><div className="preparing"><div className="preparing-ring"><AudioLines size={62} /></div><span>Préparation<br />du voyage temporel...</span></div></div></div>; }
 function OrbitCard({ className, label, image }: { className: string; label: string; image: string }) { return <div className={className}><img src={image} alt="" /><span>{label}</span><b>+</b></div>; }
 function Detail({ label, value, icon }: { label: string; value: string; icon: string }) { return <div className="detail"><span className="detail-icon">{icon}</span><div><small>{label}</small><b>{value}</b></div></div>; }
 
