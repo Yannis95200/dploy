@@ -81,13 +81,24 @@ function App() {
     setAudioStatus('loading');
     setIsPlaying(false);
     setCurrentTime(0);
-    fetch('/api/tts', {
+    const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-voice`;
+    fetch(apiUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+      },
       body: JSON.stringify({ text: intention, era: era.year }),
       signal: controller.signal,
     })
-      .then((response) => { if (!response.ok) throw new Error(response.statusText); return response.blob(); })
+      .then(async (response) => {
+        if (!response.ok) {
+          const details = await response.json().catch(() => null) as { error?: string } | null;
+          throw new Error(details?.error || response.statusText);
+        }
+        return response.blob();
+      })
       .then((blob) => { setAudioUrl(URL.createObjectURL(blob)); setAudioStatus('ready'); })
       .catch((error) => { if (error.name !== 'AbortError') setAudioStatus('error'); });
     return () => controller.abort();
@@ -185,7 +196,7 @@ function App() {
           <div className="result-grid">
             <div className="result-details">
               <div className="ad-script"><p className="ad-script-label">Le texte de votre pub</p><p className="ad-script-text">{intention}</p></div>
-              <div className="audio-player">{audioUrl && <audio ref={audioRef} src={audioUrl} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onEnded={() => setIsPlaying(false)} onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)} onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)} />}<div className="player-wave" onClick={(event) => { const audio = audioRef.current; if (!audio || !duration) return; const box = event.currentTarget.getBoundingClientRect(); audio.currentTime = ((event.clientX - box.left) / box.width) * duration; }}>{waveHeights.map((height, index) => <i key={index} className={duration && index / waveHeights.length < currentTime / duration ? 'played' : ''} style={{ height: `${height}%` }} />)}</div><div className="player-controls"><span>{formatTime(currentTime)}</span><button className="play-button" onClick={togglePlay} disabled={audioStatus !== 'ready'}>{isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}</button><span>{audioStatus === 'loading' ? '…' : formatTime(duration)}</span></div>{audioStatus === 'loading' && <p className="audio-status">Génération de la voix…</p>}{audioStatus === 'error' && <p className="audio-status">La voix n'a pas pu être générée.</p>}</div>
+              <div className="audio-player">{audioUrl && <audio ref={audioRef} src={audioUrl} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onEnded={() => setIsPlaying(false)} onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)} onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)} />}<div className="player-wave" onClick={(event) => { const audio = audioRef.current; if (!audio || !duration) return; const box = event.currentTarget.getBoundingClientRect(); audio.currentTime = ((event.clientX - box.left) / box.width) * duration; }}>{waveHeights.map((height, index) => <i key={index} className={duration && index / waveHeights.length < currentTime / duration ? 'played' : ''} style={{ height: `${height}%` }} />)}</div><div className="player-controls"><span>{formatTime(currentTime)}</span><button className="play-button" onClick={togglePlay} disabled={audioStatus !== 'ready'}>{isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}</button><span>{audioStatus === 'loading' ? '…' : formatTime(duration)}</span></div>{audioStatus === 'loading' && <p className="audio-status">Génération de la voix…</p>}{audioStatus === 'error' && <p className="audio-status">La voix n'a pas pu être générée. Vérifiez la configuration ElevenLabs.</p>}</div>
               <div className="result-actions"><button className="secondary-button" onClick={() => setMailOpen(true)} disabled={audioStatus !== 'ready'}><Mail size={15} /> Envoyer par mail</button><a className="secondary-button" href={audioUrl || undefined} download="spot-dploy.mp3" aria-disabled={audioStatus !== 'ready'} style={audioStatus !== 'ready' ? { opacity: 0.5, pointerEvents: 'none' } : undefined}><Download size={15} /> Télécharger</a></div>
             </div>
           </div>
