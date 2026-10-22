@@ -30,3 +30,7 @@ button { cursor: pointer; }
 .mail-modal h2 { font-size: 26px; }
 .mail-input { height: auto; }
 .mail-error { color: #d23a1c; margin: 10px 0 0 !important; }
+
+.ad-script-input { width: 100%; min-height: 96px; background: #0c0d0d; color: #f0ede7; border: 1px solid #ff5531; border-radius: 8px; padding: 10px 12px; font-family: inherit; font-style: italic; font-size: 15px; line-height: 1.6; resize: vertical; box-sizing: border-box; }
+.ad-script-actions { display: flex; gap: 10px; margin-top: 16px; }
+.ad-script-actions .secondary-button:disabled { opacity: .5; }
