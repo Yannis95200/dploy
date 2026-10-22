@@ -14,7 +14,8 @@ import {
   X,
 } from 'lucide-react';
 
-import { eraThemes, generatePhrase } from '@/eraThemes';
+import { generatePhrase } from '@/eraThemes';
+import { mixVoiceWithMusic } from '@/audioMix';
 
 type Product = { name: string; image: string; accent: string };
 type Era = { name: string; year: string; image: string; className?: string };
@@ -99,7 +100,11 @@ function App() {
         }
         return response.blob();
       })
-      .then((blob) => { setAudioUrl(URL.createObjectURL(blob)); setAudioStatus('ready'); })
+      .then(async (voiceBlob) => {
+        const mixed = await mixVoiceWithMusic(voiceBlob, era.year);
+        setAudioUrl(URL.createObjectURL(mixed));
+        setAudioStatus('ready');
+      })
       .catch((error) => { if (error.name !== 'AbortError') setAudioStatus('error'); });
     return () => controller.abort();
   }, [screen, era.year, intention]);
