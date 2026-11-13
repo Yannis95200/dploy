@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 
 import { generatePhrase } from '@/eraThemes';
+import claimLogo from '@/assets/Claim-OutLoud-white.svg';
 import { mixVoiceWithMusic } from '@/audioMix';
 
 type Product = { name: string; image: string; accent: string };
@@ -270,7 +271,7 @@ function App() {
   );
 }
 
-function Logo({ small = false }: { small?: boolean }) { return <div className={`logo ${small ? 'logo-small' : ''}`}><span>Dploy</span><i>•</i></div>; }
+function Logo({ small = false }: { small?: boolean }) { return <div className={`logo ${small ? 'logo-small' : ''}`}><img className="logo-claim" src={claimLogo} alt="Dploy – In store, Out Loud" /></div>; }
 function TopBar({ onBack }: { onBack?: () => void }) { return <header className="topbar"><Logo /><span className="topbar-title">The Ads Time Machine</span><div className="topbar-actions">{onBack ? <button className="icon-button" onClick={onBack}><ArrowLeft size={15} /></button> : null}<CircleUserRound size={18} /><Menu size={18} /></div></header>; }
 function Progress({ current }: { current: number }) { return <div className="progress">{steps.map((label, index) => <div className={`progress-step ${index + 1 <= current ? 'done' : ''}`} key={label}><span>{index + 1 < current ? <Check size={11} /> : index + 1}</span><b>{label}</b></div>)}</div>; }
 function ProductStep({ selected, onSelect, onOpenCustom }: { selected: string; onSelect: (item: Product) => void; onOpenCustom: () => void }) { const isCustom = !products.some((item) => item.name === selected); return <div className="step-content"><p className="section-label">01 / Sélection</p><h1>Que voulez-vous<br />promouvoir ?</h1><p className="step-intro">Choisissez un produit pour lequel créer votre spot.</p><div className="product-grid">{products.map((item) => <button className={`product-card ${selected === item.name ? 'selected' : ''}`} key={item.name} onClick={() => onSelect(item)}><div className="product-image">{item.image ? <img src={item.image} alt="" /> : <Sparkles size={26} className="product-placeholder" />}</div><span>{item.name}</span>{selected === item.name && <i><Check size={11} /></i>}</button>)}<button className={`product-card custom-card ${isCustom ? 'selected' : ''}`} onClick={onOpenCustom}><span className="custom-ou">OU</span>{isCustom ? <span className="custom-value">{selected}</span> : <span className="custom-hint">Tapez votre<br />propre produit</span>}{isCustom && <i><Check size={11} /></i>}</button></div></div>; }

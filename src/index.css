@@ -38,3 +38,8 @@ button { cursor: pointer; }
 /* IBM Plex Mono for small technical labels */
 .section-label, .aside-kicker, .topbar-title, .progress-step, .ad-script-label, .player-controls span, .audio-status, .custom-hint, .aside-orb, .product-card > span, .era-card span { font-family: 'IBM Plex Mono', monospace; }
 .section-label, .aside-kicker, .ad-script-label { font-weight: 500; }
+
+
+.logo-claim { display: block; height: 56px; width: auto; margin: -8px 0 -8px -14px; }
+.logo-small .logo-claim { height: 40px; }
+.app-shell:not(.result-shell) .logo-claim { filter: invert(1); }
