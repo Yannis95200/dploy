@@ -15,7 +15,7 @@ import {
   X,
 } from 'lucide-react';
 
-import { generatePhrase } from '@/eraThemes';
+import { eraThemes, generatePhrase } from '@/eraThemes';
 import claimLogo from '@/assets/Claim-OutLoud-white.svg';
 import { mixVoiceWithMusic } from '@/audioMix';
 
@@ -56,11 +56,14 @@ const eras: Era[] = [
 
 const waveHeights = Array.from({ length: 56 }, (_, i) => 25 + Math.round(Math.abs(Math.sin(i * 1.7) * Math.cos(i * 0.6)) * 75));
 
+const resultBars = Array.from({ length: 72 }, (_, i) => 18 + Math.round(Math.abs(Math.sin(i * 0.9) * Math.cos(i * 0.31)) * 82));
 const steps = ['Produit', 'Époque', 'Intention', 'Génération'];
 
 function App() {
   const [screen, setScreen] = useState<'home' | 'wizard' | 'result'>('home');
   const [step, setStep] = useState(1);
+  const [maxStep, setMaxStep] = useState(1);
+  const [phraseKey, setPhraseKey] = useState('');
   const [product, setProduct] = useState(products[0]);
   const [era, setEra] = useState(eras[0]);
   const [intention, setIntention] = useState('Oyé Oyé, bienvenue dans votre magasin, rendez vous au rayon frais pour profiter de notre promo flash sur les bananes.');
@@ -74,6 +77,7 @@ function App() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const audioKeyRef = useRef('');
   const [editingText, setEditingText] = useState(false);
   const [draftText, setDraftText] = useState('');
   const [mailOpen, setMailOpen] = useState(false);
@@ -83,6 +87,8 @@ function App() {
 
   useEffect(() => {
     if (screen !== 'result') return;
+    const audioKey = `${era.year}|${intention}`;
+    if (audioKeyRef.current === audioKey) { setAudioStatus('ready'); setIsPlaying(false); setCurrentTime(0); return; }
     const controller = new AbortController();
     setAudioStatus('loading');
     setAudioError('');
@@ -112,6 +118,7 @@ function App() {
       })
       .then(async (voiceBlob) => {
         const mixed = await mixVoiceWithMusic(voiceBlob, era.year);
+        audioKeyRef.current = audioKey;
         setAudioUrl(URL.createObjectURL(mixed));
         setAudioStatus('ready');
       })
@@ -157,7 +164,7 @@ function App() {
     }
   };
 
-  const regenerateText = () => { setEditingText(false); setIntention(generatePhrase(product.name, era.year, intention)); setIntentionEdited(false); };
+  const regenerateText = () => { setEditingText(false); setIntention(generatePhrase(product.name, era.year, intention)); setIntentionEdited(false); setPhraseKey(`${product.name}|${era.year}`); };
   const startEditText = () => { setDraftText(intention); setEditingText(true); };
   const saveEditText = () => { const trimmed = draftText.trim(); if (trimmed) { setIntention(trimmed); setIntentionEdited(true); } setEditingText(false); };
 
@@ -175,9 +182,17 @@ function App() {
   };
 
   const begin = () => { setScreen('wizard'); setStep(1); };
+  const goToStep = (target: number) => {
+    if (target === step || target > maxStep) return;
+    if (target === 3 && !intentionEdited && phraseKey !== `${product.name}|${era.year}`) refreshPhrase();
+    setStep(target);
+  };
+  const refreshPhrase = () => { setIntention(generatePhrase(product.name, era.year)); setPhraseKey(`${product.name}|${era.year}`); };
   const next = () => {
-    if (step === 2 && !intentionEdited) setIntention(generatePhrase(product.name, era.year));
-    if (step < 3) setStep(step + 1); else setScreen('result');
+    const key = `${product.name}|${era.year}`;
+    // only rewrite the suggested phrase when product/era changed and the user didn't write their own
+    if (step === 2 && !intentionEdited && key !== phraseKey) refreshPhrase();
+    if (step < 3) { setStep(step + 1); setMaxStep((m) => Math.max(m, step + 1)); } else setScreen('result');
   };
   const back = () => step > 1 ? setStep(step - 1) : setScreen('home');
 
@@ -199,11 +214,7 @@ function App() {
           <div className="orbit-stage">
             <div className="orbit orbit-one" /><div className="orbit orbit-two" /><div className="orbit orbit-three" />
             <div className="sound-core"><AudioLines size={77} strokeWidth={1.4} /></div>
-            <OrbitCard className="orbit-card castle-card" label="Moyen Âge" image={eras[0].image} />
-            <OrbitCard className="orbit-card banana-card" label="Bananes" image={products[0].image} />
-            <OrbitCard className="orbit-card chips-card" label="Chips" image={products[1].image} />
-            <OrbitCard className="orbit-card phone-card" label="Glaces" image={products[2].image} />
-            <OrbitCard className="orbit-card woman-card" label="Tomates" image={products[3].image} />
+            <OrbitCards />
           </div>
         </section>
         <footer className="landing-footer"><Logo small /><span>In store · Out Loud</span><div className="footer-wave"><AudioLines size={34} /></div></footer>
@@ -213,7 +224,8 @@ function App() {
 
   if (screen === 'result') {
     return (
-      <main className="app-shell result-shell">
+      <main className="app-shell result-shell" style={{ '--era-sun': eraThemes[era.year].vars['--p-sun'], '--era-accent': eraThemes[era.year].vars['--p-ribbon-bg'] } as React.CSSProperties}>
+        <div className="result-backdrop" aria-hidden="true"><div className="result-glow" /><div className={`result-bars ${isPlaying ? 'playing' : ''} ${audioStatus === 'loading' ? 'loading' : ''}`}>{resultBars.map((height, index) => <i key={index} style={{ height: `${height}%`, animationDelay: `${(index % 14) * -0.13}s` }} />)}</div></div>
         <TopBar onBack={() => setScreen('wizard')} />
         <div className="result-content">
           <div className="result-heading"><p className="back-link" onClick={() => setScreen('wizard')}><ArrowLeft size={14} /> Retour</p><h1>Et voilà votre spot<br />pour <em>{era.year}</em>,<br /><span className="diffusion-text">{eraDiffusion[era.year] ?? ''}</span></h1></div>
@@ -249,7 +261,7 @@ function App() {
       <div className="wizard-layout">
         <aside className="wizard-aside"><p className="back-link" onClick={back}><ArrowLeft size={14} /> Retour</p><p className="aside-kicker">The Ads Time Machine</p><h2>Donnez une autre dimension à votre message.</h2><div className="aside-orb"><Sparkles size={28} /><span>Votre spot<br />est presque prêt</span></div></aside>
         <section className="wizard-panel">
-          <Progress current={step} />
+          <Progress current={step} maxStep={maxStep} onSelect={goToStep} />
           {step === 1 && <ProductStep selected={product.name} onSelect={(item) => setProduct(item)} onOpenCustom={() => setCustomOpen(true)} />}
           {step === 2 && <EraStep selected={era.name} onSelect={(item) => setEra(item)} />}
           {step === 3 && <IntentStep value={intention} onChange={(value, manual = true) => { setIntention(value); setIntentionEdited(manual); }} product={product.name} eraYear={era.year} />}
@@ -273,11 +285,31 @@ function App() {
 
 function Logo({ small = false }: { small?: boolean }) { return <div className={`logo ${small ? 'logo-small' : ''}`}><img className="logo-claim" src={claimLogo} alt="Dploy – In store, Out Loud" /></div>; }
 function TopBar({ onBack }: { onBack?: () => void }) { return <header className="topbar"><Logo /><span className="topbar-title">The Ads Time Machine</span><div className="topbar-actions">{onBack ? <button className="icon-button" onClick={onBack}><ArrowLeft size={15} /></button> : null}<CircleUserRound size={18} /><Menu size={18} /></div></header>; }
-function Progress({ current }: { current: number }) { return <div className="progress">{steps.map((label, index) => <div className={`progress-step ${index + 1 <= current ? 'done' : ''}`} key={label}><span>{index + 1 < current ? <Check size={11} /> : index + 1}</span><b>{label}</b></div>)}</div>; }
+function Progress({ current, maxStep, onSelect }: { current: number; maxStep: number; onSelect: (step: number) => void }) { return <div className="progress">{steps.map((label, index) => <button type="button" className={`progress-step ${index + 1 <= current ? 'done' : ''} ${index + 1 <= maxStep && index + 1 !== current ? 'reachable' : ''}`} key={label} disabled={index + 1 > maxStep || index + 1 === current} onClick={() => onSelect(index + 1)}><span>{index + 1 < current ? <Check size={11} /> : index + 1}</span><b>{label}</b></button>)}</div>; }
 function ProductStep({ selected, onSelect, onOpenCustom }: { selected: string; onSelect: (item: Product) => void; onOpenCustom: () => void }) { const isCustom = !products.some((item) => item.name === selected); return <div className="step-content"><p className="section-label">01 / Sélection</p><h1>Que voulez-vous<br />promouvoir ?</h1><p className="step-intro">Choisissez un produit pour lequel créer votre spot.</p><div className="product-grid">{products.map((item) => <button className={`product-card ${selected === item.name ? 'selected' : ''}`} key={item.name} onClick={() => onSelect(item)}><div className="product-image">{item.image ? <img src={item.image} alt="" /> : <Sparkles size={26} className="product-placeholder" />}</div><span>{item.name}</span>{selected === item.name && <i><Check size={11} /></i>}</button>)}<button className={`product-card custom-card ${isCustom ? 'selected' : ''}`} onClick={onOpenCustom}><span className="custom-ou">OU</span>{isCustom ? <span className="custom-value">{selected}</span> : <span className="custom-hint">Tapez votre<br />propre produit</span>}{isCustom && <i><Check size={11} /></i>}</button></div></div>; }
 function EraStep({ selected, onSelect }: { selected: string; onSelect: (item: Era) => void }) { return <div className="step-content"><p className="section-label">02 / Atmosphère</p><h1>Choisissez maintenant<br />une époque</h1><p className="step-intro">Chaque époque a son propre ton, son style, ses émotions.</p><div className="era-grid">{eras.map((item) => <button className={`era-card ${selected === item.name ? 'selected' : ''}`} key={item.name} onClick={() => onSelect(item)}><img src={item.image} alt="" /><span>· {item.name}</span><i>{selected === item.name ? <Check size={11} /> : ''}</i></button>)}</div></div>; }
 function IntentStep({ value, onChange, product, eraYear }: { value: string; onChange: (value: string, manual?: boolean) => void; product: string; eraYear: string }) { return <div className="step-content intent-content"><p className="section-label">03 / Direction</p><h1>Voici votre intention</h1><p className="step-intro">Décrivez le message que votre publicité doit faire passer.</p><div className="intent-layout"><div><div className="textarea-wrap"><button className="ai-icon" type="button" title="Générer une phrase avec l’IA" onClick={() => onChange(generatePhrase(product, eraYear, value), false)}><Sparkles size={16} /></button><textarea value={value} maxLength={300} onChange={(event) => onChange(event.target.value)} /><span>{value.length}/300</span></div></div><div className="preparing"><div className="preparing-ring"><AudioLines size={62} /></div><span>Préparation<br />du voyage temporel...</span></div></div></div>; }
-function OrbitCard({ className, label, image }: { className: string; label: string; image: string }) { return <div className={className}><img src={image} alt="" /><span>{label}</span><b>+</b></div>; }
+function OrbitCard({ className, label, image }: { className: string; label: string; image: string }) { return <div className={className}><img key={image} className="orbit-img" src={image} alt="" /><span key={label} className="orbit-label">{label}</span><b>+</b></div>; }
+
+const orbitPool = [...eras.map((item) => ({ label: item.name, image: item.image })), ...products.map((item) => ({ label: item.name, image: item.image }))];
+const orbitSlots = ['castle-card', 'banana-card', 'chips-card', 'phone-card', 'woman-card'];
+
+// Home orbit: one card swaps to the next picture every few seconds, so the "time machine" keeps moving.
+function OrbitCards() {
+  const [cursor, setCursor] = useState(() => orbitSlots.map((_, slot) => slot * 3));
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const id = window.setInterval(() => setTick((t) => t + 1), 2600);
+    return () => window.clearInterval(id);
+  }, []);
+  useEffect(() => {
+    if (tick === 0) return;
+    const slot = tick % orbitSlots.length;
+    setCursor((current) => current.map((value, index) => (index === slot ? (Math.max(...current) + 1) % orbitPool.length : value)));
+  }, [tick]);
+  return <>{orbitSlots.map((slot, index) => { const item = orbitPool[cursor[index] % orbitPool.length]; return <OrbitCard key={slot} className={`orbit-card ${slot}`} label={item.label} image={item.image} />; })}</>;
+}
 function Detail({ label, value, icon }: { label: string; value: string; icon: string }) { return <div className="detail"><span className="detail-icon">{icon}</span><div><small>{label}</small><b>{value}</b></div></div>; }
 
 export default App;

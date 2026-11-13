@@ -43,3 +43,29 @@ button { cursor: pointer; }
 .logo-claim { display: block; height: 56px; width: auto; margin: -8px 0 -8px -14px; }
 .logo-small .logo-claim { height: 40px; }
 .app-shell:not(.result-shell) .logo-claim { filter: invert(1); }
+
+/* Result screen: era-coloured glow + big animated wave */
+.result-shell { position: relative; overflow: hidden; }
+.result-shell > .topbar, .result-shell > .result-content { position: relative; z-index: 1; }
+.result-backdrop { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+.result-glow { position: absolute; width: 90vw; height: 90vw; max-width: 1100px; max-height: 1100px; right: -25vw; top: -20vw; border-radius: 50%; background: radial-gradient(circle, var(--era-sun, #ff5531) 0%, transparent 62%); opacity: .4; filter: blur(30px); transition: background .6s; }
+.result-bars { position: absolute; left: 0; right: 0; bottom: 0; height: 46vh; display: flex; align-items: flex-end; gap: 6px; padding: 0 2vw; opacity: .34; -webkit-mask-image: linear-gradient(to top, #000 15%, transparent 100%); mask-image: linear-gradient(to top, #000 15%, transparent 100%); }
+.result-bars i { flex: 1; border-radius: 4px 4px 0 0; background: linear-gradient(to top, var(--era-accent, #ff5531), var(--era-sun, #ff5531)); transform-origin: bottom; transform: scaleY(.35); transition: transform .4s; }
+.result-bars.playing i { animation: barDance 1.3s ease-in-out infinite; }
+.result-bars.loading i { animation: barDance 2.6s ease-in-out infinite; opacity: .5; }
+@keyframes barDance { 0%, 100% { transform: scaleY(.3); } 50% { transform: scaleY(1); } }
+
+/* Home orbit: floating + cross-fade when a card changes picture */
+.orbit-card { overflow: hidden; }
+.orbit-card { animation: orbitFloat 6s ease-in-out infinite; }
+.banana-card { animation-delay: -1.2s; } .chips-card { animation-delay: -2.4s; } .phone-card { animation-delay: -3.6s; } .woman-card { animation-delay: -4.8s; }
+@keyframes orbitFloat { 0%, 100% { translate: 0 0; } 50% { translate: 0 -9px; } }
+.orbit-img, .orbit-label { animation: fadeIn .7s ease both; }
+
+/* Progress steps are clickable once reached */
+.progress-step { background: none; border: 0; padding: 0; font-family: inherit; cursor: default; text-align: left; }
+.progress-step:disabled { opacity: 1; }
+.progress-step.reachable { cursor: pointer; }
+.progress-step.reachable:hover b { text-decoration: underline; text-underline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) { .orbit-card, .result-bars i { animation: none !important; } }
