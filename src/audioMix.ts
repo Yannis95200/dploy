@@ -1,6 +1,6 @@
 import music50sUrl from '@/audio/50s.mp3.mpeg?url';
-import music80sUrl from '@/audio/80s.mp3.mpeg?url';
-import music00sUrl from '@/audio/00s.mp3.mpeg?url';
+import music80sUrl from '@/audio/80s-v2.mp3.mpeg?url';
+import musicMedievalUrl from '@/audio/MoyenAge.mp3.mpeg?url';
 
 const INTRO = 2;       // seconds of music before voice starts
 const OUTRO = 2.5;     // seconds of music after voice ends
@@ -8,9 +8,9 @@ const DUCK = 0.15;     // music gain while voice is playing
 const SAMPLE_RATE = 44100;
 
 const eraMusicUrl: Record<string, string> = {
+  '1500': musicMedievalUrl,
   '1950': music50sUrl,
   '1980': music80sUrl,
-  '2000': music00sUrl,
 };
 
 function encodeWav(buffer: AudioBuffer): Blob {

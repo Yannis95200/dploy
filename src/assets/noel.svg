@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 650">
+  <rect width="940" height="650" fill="#e05858"/>
+  <circle cx="780" cy="130" r="70" fill="#ecf489"/>
+  <g fill="#fbf9f1" opacity=".9">
+    <circle cx="90" cy="80" r="7"/><circle cx="210" cy="150" r="5"/><circle cx="330" cy="60" r="6"/><circle cx="470" cy="120" r="5"/>
+    <circle cx="600" cy="50" r="7"/><circle cx="700" cy="230" r="5"/><circle cx="860" cy="300" r="6"/><circle cx="120" cy="260" r="6"/>
+    <circle cx="250" cy="340" r="5"/><circle cx="60" cy="430" r="7"/><circle cx="880" cy="450" r="5"/><circle cx="560" cy="200" r="4"/>
+  </g>
+  <path d="M0 540 Q235 480 470 540 T940 520 V650 H0Z" fill="#fbf9f1"/>
+  <rect x="440" y="500" width="60" height="70" rx="6" fill="#232839"/>
+  <path d="M470 90 L610 250 H540 L660 400 H570 L700 530 H240 L370 400 H280 L400 250 H330Z" fill="#7c8c7d"/>
+  <path d="M470 90 L610 250 H540 L660 400 H570 L700 530 H470Z" fill="#6b7b6c" opacity=".55"/>
+  <polygon points="470,52 482,84 516,84 488,104 498,138 470,118 442,138 452,104 424,84 458,84" fill="#ecf489"/>
+  <circle cx="420" cy="300" r="14" fill="#e05858"/><circle cx="520" cy="360" r="14" fill="#ecf489"/>
+  <circle cx="450" cy="440" r="14" fill="#d0e1ef"/><circle cx="560" cy="470" r="14" fill="#e05858"/>
+  <circle cx="380" cy="480" r="14" fill="#ecf489"/><circle cx="500" cy="230" r="12" fill="#d0e1ef"/>
+  <rect x="150" y="480" width="90" height="70" rx="6" fill="#ecf489"/><rect x="190" y="480" width="10" height="70" fill="#e05858"/><rect x="150" y="508" width="90" height="10" fill="#e05858"/>
+  <rect x="730" y="500" width="80" height="60" rx="6" fill="#d0e1ef"/><rect x="765" y="500" width="10" height="60" fill="#232839"/><rect x="730" y="524" width="80" height="10" fill="#232839"/>
+</svg>

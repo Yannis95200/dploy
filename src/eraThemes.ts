@@ -49,19 +49,6 @@ export const eraThemes: Record<string, EraTheme> = {
       "Top promo dans vos allées : {p} à prix mini ! Fouillez le rayon et repartez avec la bonne affaire !",
     ],
   },
-  '2000': {
-    vars: { '--p-bg': 'linear-gradient(160deg, #0b3d91, #2fa4ff 55%, #e9f6ff)', '--p-ink': '#ffffff', '--p-font': "'Anton', Impact, sans-serif", '--p-border': '#d9ecff', '--p-ribbon-bg': '#ffd400', '--p-ribbon-ink': '#0b2a5c', '--p-sun': '#7fd1ff', '--p-radius': '12px', '--p-transform': 'none', '--p-style': 'normal' },
-    intro: 'Que la fête commence !',
-    tagline: 'maintenant à la télé',
-    ribbon: 'Offre exclusive !',
-    price: '5 €',
-    phrases: [
-      "Attention, chers clients ! Promo exclusive sur {p}, dans votre magasin. Rendez-vous au rayon dès maintenant !",
-      "Bonne nouvelle en magasin : {p} en offre limitée. Passez au rayon, le stock est disponible aujourd'hui seulement !",
-      "Cher client, c'est le moment de craquer : {p} en promo, à retrouver dans nos rayons jusqu'à épuisement du stock !",
-      "Offre spéciale dans votre magasin : {p} à prix réduit. Dépêchez-vous, direction le rayon !",
-    ],
-  },
   '2020': {
     vars: { '--p-bg': 'linear-gradient(160deg, #f5f3ee, #ffd9cc 55%, #ff7a59)', '--p-ink': '#1a1b1a', '--p-font': "'Space Grotesk', 'DM Sans', sans-serif", '--p-border': '#ffffff', '--p-ribbon-bg': '#1a1b1a', '--p-ribbon-ink': '#ffffff', '--p-sun': '#ffb59f', '--p-radius': '18px', '--p-transform': 'none', '--p-style': 'normal' },
     intro: 'Dans cet épisode,',
@@ -86,6 +73,19 @@ export const eraThemes: Record<string, EraTheme> = {
       "Attention, clients de la galaxie : {p} en promo dans vos allées. Dirigez-vous vers le rayon avant épuisement des stocks !",
       "Alerte promo en magasin : {p} à prix réduit. Activez votre panier et rejoignez le rayon sans attendre !",
       "Citoyens du futur, bienvenue en magasin ! Aujourd'hui, {p} en promotion au rayon. Une affaire intergalactique !",
+    ],
+  },
+  'Noël': {
+    vars: { '--p-bg': 'linear-gradient(160deg, #e05858, #7c8c7d)', '--p-ink': '#fbf9f1', '--p-font': "'Manrope', sans-serif", '--p-border': '#fbf9f1', '--p-ribbon-bg': '#7c8c7d', '--p-ribbon-ink': '#fbf9f1', '--p-sun': '#e05858', '--p-radius': '12px', '--p-transform': 'none', '--p-style': 'normal' },
+    intro: 'Message de Noël',
+    tagline: 'livraison par traîneau',
+    ribbon: 'Promo de Noël',
+    price: '1 biscuit',
+    phrases: [
+      "Ho ho ho ! Le Père Noël vous attend au rayon : {p} en promotion pour des fêtes réussies !",
+      "Joyeux Noël, chers clients ! Glissez-vous jusqu'au rayon : {p} à prix de lutin, c'est cadeau !",
+      "Les cloches sonnent, le magasin brille ! Aujourd'hui, {p} en promo spéciale Noël, à glisser sous le sapin.",
+      "Chers clients, la magie de Noël est en rayon : {p} à petit prix. Profitez-en avant le passage du traîneau !",
     ],
   },
 };
